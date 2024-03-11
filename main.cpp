@@ -9,7 +9,6 @@
 
 using namespace std ;
 
-
 typedef struct point //BFS坐标
 {
     int x , y , step ;
@@ -17,8 +16,6 @@ typedef struct point //BFS坐标
 }P;
 
 int Sblocks [ width ] [ height ] = { 0 } ; //蛇区块,赋予的值代表此坐标是蛇的第个？区块 ,用于绘制
-int tra     [ width ] [ height ] = { 0 } ; // BFS标记
-int Step    [ width ] [ height ] = { 0 } ; //标记步数
 int foodX , foodY ; //食物坐标
 int headX , headY ; //蛇头坐标
 bool shouldExit = false ; //结束游戏
@@ -113,13 +110,13 @@ void movesnake ( int _hx , int _hy ) //移动逻辑
         || newheadY >= height || newheadY < 0 ) //越界
     {
         shouldExit = 1 ;
-        cout << "游戏结束！原因：新蛇头越界" << endl ;
+        cout << "Game Over out of bounds" << endl ;
     }
 
     if ( Sblocks [ newheadX ] [ newheadY ] != 0 ) //自食
     {
         shouldExit = 1 ;
-        cout << "游戏结束！原因：自食" << endl ;
+        cout << "Game Over suicide" << endl ;
     }
     Sblocks [ newheadX ] [ newheadY ] = 1 ; //更新蛇头坐标
 
@@ -138,9 +135,13 @@ void movesnake ( int _hx , int _hy ) //移动逻辑
 void BFS ( void ) //BFS逻辑
 {
     queue < P > q ; //BFS队列
-    int headstep = 0 ; //步数
+    int headstep  ; //步数
+    int tra     [ width ] [ height ] = { 0 } ; // BFS标记
+    int Step    [ width ] [ height ] = { 0 } ; //标记步数
+
     q.push (P (foodX, foodY, 0 ) ) ; //从食物出发BFS蛇头
-    tra [ foodX ] [ foodY ] = 1 ; //起点已访问
+    Step [ foodX ] [ foodY ] = 0 ;
+    tra  [ foodX ] [ foodY ] = 1 ; //起点已访问
 
     int dx [ 4 ] = {0 ,0 ,-1,1 } ; // 上 下 左 右
     int dy [ 4 ] = {-1,1 ,0 ,0 } ;
@@ -157,29 +158,60 @@ void BFS ( void ) //BFS逻辑
 
             if ( newfoodX >= 0 && newfoodX < width
               && newfoodY >= 0 && newfoodY < height
-              && tra     [ newfoodX ] [ newfoodY ] == 0
-              && Sblocks [ newfoodX ] [ newfoodY ] == 0 ) // BFS路径规则
+              && tra [ newfoodX ] [ newfoodY ] == 0
+              && Sblocks [ newfoodX  ] [ newfoodY ] == 0 ) // BFS路径规则
             {
+                Step [ newfoodX ] [ newfoodY ] = tmp.step + 1 ; //标记步数
                 q.push (P( newfoodX, newfoodY, tmp.step + 1 ) ) ;
-                Step [ newfoodX ] [ newfoodY ] = q.front().step ; //标记步数
                 tra  [ newfoodX ] [ newfoodY ] = 1 ;
             }
 
             if ( newfoodX == headX && newfoodY == headY ) //抵达目标
             {
                 headstep = tmp.step ;
-                while ( headstep > 0 )
+                for ( int h = 0 ; h < height ; h ++ )
                 {
+                    for ( int w = 0 ; w < width ; w ++ )
+                    {
+                        cout << Step [ w ] [ h ] <<" " ;
+                        if ( h == height - 1 )
+                        {
+                            cout << "!" ;
+                        }
+                    }
+                    cout << endl ;
+                }
+                while ( headstep != 0 )
+                {
+                    int B = 0 ;
                     for ( int m = 0 ; m < 4 ; m++ )
                     {
                         int newheadX = headX + dx [ m ] ;
                         int newheadY = headY + dy [ m ] ;
+                        B ++ ;
 
                         if ( newheadX >= 0 && newheadX < width
                           && newheadY >= 0 && newheadY < height
-                          && Step [ newheadX ] [ newheadY ] == headstep -1 )
+                          && Step    [ newheadX ] [ newheadY ] == headstep
+                          && Sblocks [ newheadX ] [ newheadY ] == 0 )
                         {
-                            Sleep ( 150 ) ; // 每150ms更新一次
+                            Sleep ( 200 ) ; // 每200ms更新一次
+                            /* if ( m == 0 )
+                            {
+                                cout << 'w' << endl ;
+                            }
+                            if ( m == 1 )
+                            {
+                                cout << 's' << endl ;
+                            }
+                            if ( m == 2 )
+                            {
+                                cout << 'a' << endl ;
+                            }
+                            if ( m == 3 )
+                            {
+                                cout << 'd' << endl ;
+                            } */
                             headX = newheadX , headY = newheadY ; //更新蛇头坐标
                             movesnake ( newheadX , newheadY ) ; //提供蛇头坐标与移动方向
                             headstep -- ;
@@ -191,7 +223,7 @@ void BFS ( void ) //BFS逻辑
     }
 }
 
-void updateWithoutInput ( void ) //与输入无关的更新
+void update ( void ) //更新
 {
     if ( shouldExit )
     {
@@ -203,9 +235,10 @@ void updateWithoutInput ( void ) //与输入无关的更新
 int main ( void )
 {
     initGame ( ) ;
+    show ( ) ;
     while ( !shouldExit )
     {
-        updateWithoutInput ( ) ;
+        update ( ) ;
     }
     return 0 ;
 }
